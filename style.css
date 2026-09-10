@@ -171,6 +171,38 @@ body {
     overflow-y: auto;
 }
 
+/* COMPANY PHOTO CARD */
+.company-banner-card {
+    position: relative;
+    width: 100%;
+    height: 110px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.company-banner-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.company-badge-overlay {
+    position: absolute;
+    bottom: 8px;
+    left: 10px;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(4px);
+    color: #ffffff;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
 .emp-profile-card {
     background: #ffffff;
     border-radius: 18px;

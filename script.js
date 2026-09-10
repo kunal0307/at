@@ -50,7 +50,7 @@ function updateUserProfileUI(user) {
     document.getElementById('btnCallHrModal').href = hrTel;
 }
 
-// 3. GOOGLE SHEET LOGIN (Text/Plain Header for CORS Safe Request)
+// 3. GOOGLE SHEET LOGIN
 async function handleLogin() {
     const idInput = document.getElementById('loginId').value.trim().toUpperCase();
     const passInput = document.getElementById('loginPass').value.trim();
@@ -85,7 +85,6 @@ async function handleLogin() {
             return;
         }
 
-        // Fresh session setup
         localStorage.removeItem('current_sheet_user');
         employeeAttendanceHistory = {};
 
@@ -146,16 +145,13 @@ function closePunchCamera() {
 }
 
 function captureAndStampPunch() {
-    const btn = document.getElementById('btnSnapPhoto');
-    btn.innerText = "Uploading to Drive...";
-    btn.disabled = true;
-
     const video = document.getElementById('cameraVideo');
     const canvas = document.getElementById('stampCanvas');
     const ctx = canvas.getContext('2d');
 
-    canvas.width = 640;
-    canvas.height = 480;
+    // Compressed dimensions for fast Google Drive upload
+    canvas.width = 480;
+    canvas.height = 360;
 
     // Mirror Selfie
     ctx.save();
@@ -170,30 +166,28 @@ function captureAndStampPunch() {
 
     // Watermark Overlay
     ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-    ctx.fillRect(0, canvas.height - 110, canvas.width, 110);
+    ctx.fillRect(0, canvas.height - 95, canvas.width, 95);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 20px Inter, Arial";
-    ctx.fillText(`PUNCH ${activePunchType}: ${timeStr} | ${dateStr}`, 18, canvas.height - 75);
+    ctx.font = "bold 16px Inter, Arial";
+    ctx.fillText(`PUNCH ${activePunchType}: ${timeStr} | ${dateStr}`, 14, canvas.height - 65);
 
-    ctx.font = "16px Inter, Arial";
+    ctx.font = "13px Inter, Arial";
     ctx.fillStyle = "#93c5fd";
-    ctx.fillText(`EMP: ${currentUser.name} (${currentUser.id})`, 18, canvas.height - 45);
+    ctx.fillText(`EMP: ${currentUser.name} (${currentUser.id})`, 14, canvas.height - 40);
 
     ctx.fillStyle = "#facc15";
-    ctx.font = "14px Inter, Arial";
-    ctx.fillText(`📍 Loc: ${liveLocation}`, 18, canvas.height - 18);
+    ctx.font = "12px Inter, Arial";
+    ctx.fillText(`📍 Loc: ${liveLocation}`, 14, canvas.height - 16);
 
-    const stampedPhotoData = canvas.toDataURL('image/jpeg', 0.80);
+    // Optimized JPEG quality to prevent timeout
+    const stampedPhotoData = canvas.toDataURL('image/jpeg', 0.65);
 
     closePunchCamera();
-    btn.innerText = "Click & Punch";
-    btn.disabled = false;
-
     commitAttendancePunch(activePunchType, timeStr, stampedPhotoData);
 }
 
-// 5. COMMIT PUNCH TO GOOGLE SHEET & DRIVE
+// 5. COMMIT PUNCH (WITH SAFE UI RECOVERY)
 async function commitAttendancePunch(type, timeStr, photoData) {
     const now = new Date();
     const dateKey = formatDateKey(now);
@@ -201,8 +195,10 @@ async function commitAttendancePunch(type, timeStr, photoData) {
     const inBtn = document.getElementById('punchInBtn');
     const outBtn = document.getElementById('punchOutBtn');
 
-    if (type === 'IN') inBtn.innerText = "Saving...";
-    if (type === 'OUT') outBtn.innerText = "Saving...";
+    if (type === 'IN') inBtn.innerText = "Uploading to Sheet...";
+    if (type === 'OUT') outBtn.innerText = "Uploading to Sheet...";
+    inBtn.disabled = true;
+    outBtn.disabled = true;
 
     try {
         const payload = {
@@ -243,14 +239,13 @@ async function commitAttendancePunch(type, timeStr, photoData) {
             alert(`Punch ${type} successfully recorded!`);
         } else {
             alert("Upload failed: " + result.message);
+            await syncAttendanceUI();
         }
 
     } catch (err) {
-        console.error("Punch error:", err);
-        alert("Network Error: Data sheet tak nahi pahuncha. Console log dekhein.");
-    } finally {
-        inBtn.innerHTML = '<i class="ph ph-camera"></i> Punch In';
-        outBtn.innerHTML = '<i class="ph ph-camera"></i> Punch Out';
+        console.error("Punch upload error:", err);
+        alert("Network Error: Data Sheet tak nahi pahunch saka. Dobara try karein.");
+        await syncAttendanceUI();
     }
 }
 
@@ -286,6 +281,9 @@ async function syncAttendanceUI() {
     const outBtn = document.getElementById('punchOutBtn');
     const limitMsg = document.getElementById('punchLimitMsg');
     const todayKey = formatDateKey(new Date());
+
+    inBtn.innerHTML = '<i class="ph ph-camera"></i> Punch In';
+    outBtn.innerHTML = '<i class="ph ph-camera"></i> Punch Out';
 
     await fetchUserAttendanceHistory();
 
