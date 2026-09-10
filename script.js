@@ -1,7 +1,7 @@
 // ========================================================
-// ⚠️ APNA GOOGLE APPS SCRIPT WEB APP URL YAHAN PASTE KAREIN:
+// ⚠️ GOOGLE APPS SCRIPT WEB APP URL:
 // ========================================================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySiMEYvw62Jr6BQLBjSxrJlXWXvs5V_2yCMs8UUf920CpCOYSFdh4-tVt-NY-UmzXiNQ/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx18RsLIFpkfA1nUrwINLYr8SbVwqn8tTPtYcAYHKpit6I0FrF9i6uzDaFbYrCf_ZDQ/exec";
 
 let currentUser = null;
 let liveLocation = "Getting location...";
@@ -50,7 +50,7 @@ function updateUserProfileUI(user) {
     document.getElementById('btnCallHrModal').href = hrTel;
 }
 
-// 3. GOOGLE SHEET LOGIN
+// 3. GOOGLE SHEET LOGIN (REDIRECT FOLLOW ENABLED)
 async function handleLogin() {
     const idInput = document.getElementById('loginId').value.trim().toUpperCase();
     const passInput = document.getElementById('loginPass').value.trim();
@@ -70,6 +70,7 @@ async function handleLogin() {
     try {
         const res = await fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
+            redirect: "follow",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({
                 action: "login",
@@ -85,6 +86,7 @@ async function handleLogin() {
             return;
         }
 
+        // Fresh session setup
         localStorage.removeItem('current_sheet_user');
         employeeAttendanceHistory = {};
 
@@ -149,9 +151,9 @@ function captureAndStampPunch() {
     const canvas = document.getElementById('stampCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Compressed dimensions for fast Google Drive upload
-    canvas.width = 480;
-    canvas.height = 360;
+    // Compressed canvas size to prevent network timeout
+    canvas.width = 400;
+    canvas.height = 300;
 
     // Mirror Selfie
     ctx.save();
@@ -166,28 +168,27 @@ function captureAndStampPunch() {
 
     // Watermark Overlay
     ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-    ctx.fillRect(0, canvas.height - 95, canvas.width, 95);
+    ctx.fillRect(0, canvas.height - 85, canvas.width, 85);
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 16px Inter, Arial";
-    ctx.fillText(`PUNCH ${activePunchType}: ${timeStr} | ${dateStr}`, 14, canvas.height - 65);
+    ctx.font = "bold 15px Inter, Arial";
+    ctx.fillText(`PUNCH ${activePunchType}: ${timeStr} | ${dateStr}`, 12, canvas.height - 58);
 
-    ctx.font = "13px Inter, Arial";
+    ctx.font = "12px Inter, Arial";
     ctx.fillStyle = "#93c5fd";
-    ctx.fillText(`EMP: ${currentUser.name} (${currentUser.id})`, 14, canvas.height - 40);
+    ctx.fillText(`EMP: ${currentUser.name} (${currentUser.id})`, 12, canvas.height - 35);
 
     ctx.fillStyle = "#facc15";
-    ctx.font = "12px Inter, Arial";
-    ctx.fillText(`📍 Loc: ${liveLocation}`, 14, canvas.height - 16);
+    ctx.font = "11px Inter, Arial";
+    ctx.fillText(`📍 Loc: ${liveLocation}`, 12, canvas.height - 14);
 
-    // Optimized JPEG quality to prevent timeout
-    const stampedPhotoData = canvas.toDataURL('image/jpeg', 0.65);
+    const stampedPhotoData = canvas.toDataURL('image/jpeg', 0.60);
 
     closePunchCamera();
     commitAttendancePunch(activePunchType, timeStr, stampedPhotoData);
 }
 
-// 5. COMMIT PUNCH (WITH SAFE UI RECOVERY)
+// 5. COMMIT PUNCH (CORS REDIRECT SAFE)
 async function commitAttendancePunch(type, timeStr, photoData) {
     const now = new Date();
     const dateKey = formatDateKey(now);
@@ -195,8 +196,8 @@ async function commitAttendancePunch(type, timeStr, photoData) {
     const inBtn = document.getElementById('punchInBtn');
     const outBtn = document.getElementById('punchOutBtn');
 
-    if (type === 'IN') inBtn.innerText = "Uploading to Sheet...";
-    if (type === 'OUT') outBtn.innerText = "Uploading to Sheet...";
+    if (type === 'IN') inBtn.innerText = "Saving to Sheet...";
+    if (type === 'OUT') outBtn.innerText = "Saving to Sheet...";
     inBtn.disabled = true;
     outBtn.disabled = true;
 
@@ -214,6 +215,7 @@ async function commitAttendancePunch(type, timeStr, photoData) {
 
         const res = await fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
+            redirect: "follow",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify(payload)
         });
@@ -243,8 +245,8 @@ async function commitAttendancePunch(type, timeStr, photoData) {
         }
 
     } catch (err) {
-        console.error("Punch upload error:", err);
-        alert("Network Error: Data Sheet tak nahi pahunch saka. Dobara try karein.");
+        console.error("Punch error:", err);
+        alert("Network Error: Sheet tak punch record nahi hua. Console log check karein.");
         await syncAttendanceUI();
     }
 }
@@ -260,6 +262,7 @@ async function fetchUserAttendanceHistory() {
     try {
         const res = await fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
+            redirect: "follow",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({
                 action: "getHistory",

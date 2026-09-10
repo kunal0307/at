@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Employee Portal</title>
+    <title>Employee Attendance Portal</title>
     
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,18 +16,12 @@
 <body>
 
 <div class="phone-shell">
-    <!-- 1. LOGIN SCREEN -->
+    <!-- 1. LOGIN SCREEN (WITH COMPANY LOGO) -->
     <div id="loginSection">
-        <div class="brand-logo-wrap">
-            <div class="brand-logo">
-                <div class="logo-dots">
-                    <span class="dot d-1"></span>
-                    <span class="dot d-2"></span>
-                    <span class="dot d-3"></span>
-                    <span class="dot d-4"></span>
-                </div>
-                cignifi
-            </div>
+        <div class="company-logo-container">
+            <!-- Yahan aap apni Company Logo ka link daal sakte hain -->
+            <img id="companyLoginLogo" src="https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300&auto=format&fit=crop&q=80" alt="Company Logo" class="company-brand-logo">
+            <h1 class="brand-title">Cignifi Portal</h1>
         </div>
 
         <h2 class="heading-text">Login to your Account</h2>
@@ -44,7 +38,7 @@
         <p id="errorMsg" class="error-msg"></p>
     </div>
 
-    <!-- 2. DASHBOARD SCREEN -->
+    <!-- 2. DASHBOARD SCREEN (CLEAN NO EXTRA TOP PHOTO) -->
     <div id="dashSection">
         <div class="clean-top-bar">
             <div class="user-status-badge">
@@ -57,15 +51,6 @@
         </div>
 
         <div class="app-body">
-            <!-- COMPANY PHOTO / BANNER CARD -->
-            <div class="company-banner-card">
-                <img id="companyLogoImg" src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&auto=format&fit=crop&q=80" alt="Company Banner" class="company-banner-img">
-                <div class="company-badge-overlay">
-                    <i class="ph ph-buildings"></i>
-                    <span>Cignifi Corporate Office</span>
-                </div>
-            </div>
-
             <!-- USER PROFILE CARD -->
             <div class="emp-profile-card">
                 <div class="emp-top-info">
@@ -218,7 +203,7 @@
                 </div>
                 <div class="detail-grid" id="detailGridContent">
                     <div style="grid-column: span 2; text-align: center; color: #94a3b8; font-size: 0.78rem; padding: 10px;">
-                        Loading attendance data...
+                        Select a date from calendar.
                     </div>
                 </div>
             </div>
