@@ -48,18 +48,22 @@ body {
 }
 
 .company-brand-logo {
-    width: 72px;
-    height: 72px;
-    border-radius: 16px;
-    object-fit: cover;
-    box-shadow: 0 6px 18px rgba(30, 58, 138, 0.15);
+    width: 80px;
+    height: 80px;
+    border-radius: 18px;
+    object-fit: contain;
+    background: #ffffff;
+    padding: 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .brand-title {
-    font-size: 1.45rem;
+    font-size: 1.25rem;
     font-weight: 800;
     color: #1e3a8a;
-    letter-spacing: -0.5px;
+    text-align: center;
+    line-height: 1.3;
+    margin-top: 6px;
 }
 
 .heading-text {
