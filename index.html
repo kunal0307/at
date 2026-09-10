@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Employee Portal</title>
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1e3a8a">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="phone-shell">
+    <!-- 1. LOGIN SCREEN -->
+    <div id="loginSection">
+        <div class="brand-logo-wrap">
+            <div class="brand-logo">
+                <div class="logo-dots">
+                    <span class="dot d-1"></span>
+                    <span class="dot d-2"></span>
+                    <span class="dot d-3"></span>
+                    <span class="dot d-4"></span>
+                </div>
+                cignifi
+            </div>
+        </div>
+
+        <h2 class="heading-text">Login to your Account</h2>
+
+        <div class="form-group">
+            <input type="text" id="loginId" class="clean-input" placeholder="Employee ID / Mobile No" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+            <input type="password" id="loginPass" class="clean-input" placeholder="Password">
+        </div>
+
+        <button class="btn-signin" id="btnSignIn" onclick="handleLogin()">Sign in</button>
+        <p id="errorMsg" class="error-msg"></p>
+    </div>
+
+    <!-- 2. DASHBOARD SCREEN -->
+    <div id="dashSection">
+        <div class="clean-top-bar">
+            <div class="user-status-badge">
+                <span class="status-dot"></span>
+                <span>Active</span>
+            </div>
+            <button class="logout-btn-minimal" onclick="logout()">
+                <i class="ph ph-sign-out"></i> Logout
+            </button>
+        </div>
+
+        <div class="app-body">
+            <div class="emp-profile-card">
+                <div class="emp-top-info">
+                    <img id="uPhoto" class="emp-photo" src="" alt="Emp Photo">
+                    <div class="emp-name-role">
+                        <h3 id="uName">--</h3>
+                        <p id="uRole">--</p>
+                    </div>
+                </div>
+                <div class="emp-meta-grid">
+                    <div><span>Employee ID:</span> <br><b id="uCode">--</b></div>
+                    <div><span>Mobile No:</span> <br><b id="uMobile">--</b></div>
+                    <div style="grid-column: span 2; margin-top: 4px;">
+                        <span>Reporting Manager:</span> <b id="uManager">--</b>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Single Punch Control Buttons -->
+            <div class="punch-buttons-wrap">
+                <button id="punchInBtn" class="action-punch-btn btn-punch-in" onclick="openPunchCamera('IN')">
+                    <i class="ph ph-camera"></i> Punch In
+                </button>
+                <button id="punchOutBtn" class="action-punch-btn btn-punch-out" onclick="openPunchCamera('OUT')" disabled>
+                    <i class="ph ph-camera"></i> Punch Out
+                </button>
+            </div>
+
+            <div id="punchLimitMsg" class="punch-limit-msg"></div>
+
+            <div class="loc-indicator">
+                <i class="ph ph-map-pin" style="color: #1e3a8a; font-size: 16px;"></i>
+                <span id="locTxt">Detecting GPS location...</span>
+            </div>
+
+            <div class="action-grid">
+                <div class="grid-box" onclick="openCalendarView()">
+                    <div class="icon-circle" style="background: #eff6ff; color: #1e3a8a;">
+                        <i class="ph ph-calendar-check"></i>
+                    </div>
+                    <span>Attendance</span>
+                </div>
+                <div class="grid-box" onclick="alert('Leave Request module')">
+                    <div class="icon-circle" style="background: #f0fdf4; color: #16a34a;">
+                        <i class="ph ph-calendar-x"></i>
+                    </div>
+                    <span>Leave Request</span>
+                </div>
+            </div>
+
+            <!-- Escalation Call Buttons -->
+            <div class="support-call-card">
+                <small>Help & Escalation</small>
+                <div class="call-buttons-grid">
+                    <a id="btnCallMgrDash" href="tel:" class="call-btn btn-call-mgr">
+                        <i class="ph ph-phone-call"></i> Call Manager
+                    </a>
+                    <a id="btnCallHrDash" href="tel:" class="call-btn btn-call-hr">
+                        <i class="ph ph-headset"></i> Call HR
+                    </a>
+                </div>
+            </div>
+
+            <div class="punch-bar">
+                <div class="punch-col">
+                    <small>Today In</small>
+                    <span id="barIn">--:--:--</span>
+                </div>
+                <div class="punch-col">
+                    <small>Today Out</small>
+                    <span id="barOut">--:--:--</span>
+                </div>
+                <div class="punch-col">
+                    <small>Break Time</small>
+                    <span>1 hr</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. LIVE CAMERA MODAL -->
+    <div class="camera-overlay" id="cameraModal">
+        <div class="camera-box">
+            <div class="camera-header">
+                <span id="cameraTitle">Live Punch In</span>
+                <button class="camera-close" onclick="closePunchCamera()"><i class="ph ph-x"></i></button>
+            </div>
+            <video id="cameraVideo" autoplay playsinline></video>
+            <canvas id="stampCanvas" style="display:none;"></canvas>
+            
+            <button class="snap-btn" id="btnSnapPhoto" onclick="captureAndStampPunch()">
+                <i class="ph ph-aperture" style="font-size: 22px;"></i> Click & Punch
+            </button>
+        </div>
+    </div>
+
+    <!-- 4. SHIFT COMPLETION POPUP -->
+    <div class="completion-modal-overlay" id="completionModal">
+        <div class="completion-card">
+            <div class="success-icon-wrap"><i class="ph ph-check-circle"></i></div>
+            <h3>Today's Punch Completed!</h3>
+            <p>Shift attendance sheet par update ho chuki hai.</p>
+
+            <div class="summary-box">
+                <div class="summary-col">
+                    <small>Punch In</small>
+                    <b id="modalInTime">--:--</b>
+                </div>
+                <div class="summary-col">
+                    <small>Punch Out</small>
+                    <b id="modalOutTime">--:--</b>
+                </div>
+            </div>
+
+            <div style="border-top: 1px dashed #e2e8f0; padding-top: 14px; margin-bottom: 16px;">
+                <small style="display:block; font-size:0.72rem; color:#64748b; margin-bottom:10px;">Direct Escalation:</small>
+                <div class="call-buttons-grid">
+                    <a id="btnCallMgrModal" href="tel:" class="call-btn btn-call-mgr"><i class="ph ph-phone-call"></i> Call Manager</a>
+                    <a id="btnCallHrModal" href="tel:" class="call-btn btn-call-hr"><i class="ph ph-headset"></i> Call HR</a>
+                </div>
+            </div>
+
+            <button class="btn-modal-ok" onclick="closeCompletionModal()">OK, Understood</button>
+        </div>
+    </div>
+
+    <!-- 5. ATTENDANCE CALENDAR -->
+    <div id="calendarSection">
+        <div class="history-header">
+            <button class="back-btn" onclick="closeCalendarView()"><i class="ph ph-arrow-left"></i></button>
+            <div class="header-title-clean">Attendance Calendar</div>
+        </div>
+
+        <div class="calendar-body">
+            <div class="calendar-card">
+                <div class="calendar-month-bar">
+                    <button class="month-nav-btn" onclick="changeMonth(-1)"><i class="ph ph-caret-left"></i></button>
+                    <h4 id="monthYearTitle">Month Year</h4>
+                    <button class="month-nav-btn" onclick="changeMonth(1)"><i class="ph ph-caret-right"></i></button>
+                </div>
+                <div class="weekdays-grid">
+                    <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+                </div>
+                <div class="days-grid" id="daysGrid"></div>
+            </div>
+
+            <div class="detail-card" id="dateDetailCard">
+                <div class="detail-top">
+                    <span class="selected-date-title" id="selectedDateTitle">Select a date</span>
+                    <span class="status-pill" id="selectedDateStatus">--</span>
+                </div>
+                <div class="detail-grid" id="detailGridContent">
+                    <div style="grid-column: span 2; text-align: center; color: #94a3b8; font-size: 0.78rem; padding: 10px;">
+                        Loading attendance data...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
