@@ -46,16 +46,16 @@ function captureLocation() {
 // 2. DYNAMIC PROFILE UPDATE
 function updateUserProfileUI(user) {
     document.getElementById('uName').innerText = user.name || '--';
-    document.getElementById('uRole').innerText = user.role || 'Field Executive';
+    document.getElementById('uRole').innerText = user.role || '--';
     document.getElementById('uCode').innerText = user.id || '--';
     document.getElementById('uMobile').innerText = user.mobile || '--';
-    document.getElementById('uManager').innerText = user.manager || 'Mr. Amit Kumar';
+    document.getElementById('uManager').innerText = user.manager || '--';
 
     const photoEl = document.getElementById('uPhoto');
     photoEl.src = user.photo ? user.photo : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
 
-    const mgrTel = `tel:${user.managerPhone || '+919811122233'}`;
-    const hrTel = `tel:${user.hrPhone || '+919844455566'}`;
+    const mgrTel = `tel:${user.managerPhone || '+919760040502'}`;
+    const hrTel = `tel:${user.hrPhone || '+919520294101'}`;
     document.getElementById('btnCallMgrDash').href = mgrTel;
     document.getElementById('btnCallHrDash').href = hrTel;
     document.getElementById('btnCallMgrModal').href = mgrTel;
