@@ -12,7 +12,19 @@ let activePunchType = null;
 let cameraStream = null;
 let employeeAttendanceHistory = {};
 
-// 1. GPS TRACKER
+// TIME CLEANER: 1899 Date ko Clean Time me convert karta hai
+function cleanTimeString(rawTime) {
+    if (!rawTime || rawTime === '--:--:--') return '--:--:--';
+    if (rawTime.includes("GMT") || rawTime.includes("1899")) {
+        const d = new Date(rawTime);
+        if (!isNaN(d.getTime())) {
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+    }
+    return rawTime;
+}
+
+// 1. LIVE GPS TRACKER
 function captureLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -31,7 +43,7 @@ function captureLocation() {
     }
 }
 
-// 2. PROFILE UI POPULATE
+// 2. DYNAMIC PROFILE UPDATE
 function updateUserProfileUI(user) {
     document.getElementById('uName').innerText = user.name || '--';
     document.getElementById('uRole').innerText = user.role || 'Field Executive';
@@ -50,7 +62,7 @@ function updateUserProfileUI(user) {
     document.getElementById('btnCallHrModal').href = hrTel;
 }
 
-// 3. LOGIN HANDLER
+// 3. GOOGLE SHEET LOGIN
 async function handleLogin() {
     const idInput = document.getElementById('loginId').value.trim().toUpperCase();
     const passInput = document.getElementById('loginPass').value.trim();
@@ -101,7 +113,7 @@ async function handleLogin() {
         await syncAttendanceUI();
 
     } catch (err) {
-        console.error("Login Error:", err);
+        console.error(err);
         errorEl.innerText = "Connection Failed! Web App URL check karein.";
     } finally {
         btn.innerText = "Sign in";
@@ -153,7 +165,6 @@ function captureAndStampPunch() {
     canvas.width = 400;
     canvas.height = 300;
 
-    // Mirror mode
     ctx.save();
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
@@ -164,7 +175,6 @@ function captureAndStampPunch() {
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    // Watermark Overlay
     ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
     ctx.fillRect(0, canvas.height - 85, canvas.width, 85);
 
@@ -186,7 +196,7 @@ function captureAndStampPunch() {
     commitAttendancePunch(activePunchType, timeStr, stampedPhotoData);
 }
 
-// 5. DATA TRANSMISSION & UI UPDATE
+// 5. COMMIT PUNCH
 async function commitAttendancePunch(type, timeStr, photoData) {
     const now = new Date();
     const dateKey = formatDateKey(now);
@@ -194,12 +204,11 @@ async function commitAttendancePunch(type, timeStr, photoData) {
     const inBtn = document.getElementById('punchInBtn');
     const outBtn = document.getElementById('punchOutBtn');
 
-    if (type === 'IN') inBtn.innerText = "Saving to Sheet...";
-    if (type === 'OUT') outBtn.innerText = "Saving to Sheet...";
+    if (type === 'IN') inBtn.innerText = "Saving...";
+    if (type === 'OUT') outBtn.innerText = "Saving...";
     inBtn.disabled = true;
     outBtn.disabled = true;
 
-    // Local instant preview
     if (!employeeAttendanceHistory[dateKey]) {
         employeeAttendanceHistory[dateKey] = {};
     }
@@ -235,20 +244,20 @@ async function commitAttendancePunch(type, timeStr, photoData) {
                 employeeAttendanceHistory[dateKey].in.photo = result.photoUrl;
             } else if (type === 'OUT') {
                 employeeAttendanceHistory[dateKey].out.photo = result.photoUrl;
-                const inTime = employeeAttendanceHistory[dateKey].in ? employeeAttendanceHistory[dateKey].in.time : '--:--';
+                const inTime = employeeAttendanceHistory[dateKey].in ? cleanTimeString(employeeAttendanceHistory[dateKey].in.time) : '--:--';
                 document.getElementById('modalInTime').innerText = inTime;
-                document.getElementById('modalOutTime').innerText = timeStr;
+                document.getElementById('modalOutTime').innerText = cleanTimeString(timeStr);
                 document.getElementById('completionModal').style.display = 'flex';
             }
 
             alert(`Punch ${type} successfully recorded!`);
         } else {
-            alert("Upload issue: " + result.message);
+            alert("Upload failed: " + result.message);
         }
 
     } catch (err) {
-        console.error("Punch transmission error:", err);
-        alert("Server timeout! Punch local update ho chuka hai.");
+        console.error("Punch error:", err);
+        alert("Server network slow hai, par punch local save ho gaya hai.");
     } finally {
         await syncAttendanceUI();
     }
@@ -258,7 +267,7 @@ function closeCompletionModal() {
     document.getElementById('completionModal').style.display = 'none';
 }
 
-// 6. FETCH LOGGED-IN EMPLOYEE DATA
+// 6. HISTORY FETCH (CURRENT USER ONLY)
 async function fetchUserAttendanceHistory() {
     if (!currentUser) return;
 
@@ -281,7 +290,7 @@ async function fetchUserAttendanceHistory() {
     }
 }
 
-// 7. SYNC BUTTON CONTROLS
+// 7. SYNC PUNCH UI & STRICT RULES
 async function syncAttendanceUI() {
     const inBtn = document.getElementById('punchInBtn');
     const outBtn = document.getElementById('punchOutBtn');
@@ -307,19 +316,19 @@ async function syncAttendanceUI() {
         outBtn.disabled = false;
         limitMsg.className = "punch-limit-msg limit-working";
         limitMsg.innerText = "⏳ Punch In recorded. Shift end par punch out karein.";
-        document.getElementById('barIn').innerText = todayData.in.time;
+        document.getElementById('barIn').innerText = cleanTimeString(todayData.in.time);
         document.getElementById('barOut').innerText = '--:--:--';
     } else {
         inBtn.disabled = true;
         outBtn.disabled = true;
         limitMsg.className = "punch-limit-msg limit-completed";
         limitMsg.innerText = "✓ Today's punch completed! Next punch tomorrow.";
-        document.getElementById('barIn').innerText = todayData.in.time;
-        document.getElementById('barOut').innerText = todayData.out.time;
+        document.getElementById('barIn').innerText = cleanTimeString(todayData.in.time);
+        document.getElementById('barOut').innerText = cleanTimeString(todayData.out.time);
     }
 }
 
-// 8. ATTENDANCE CALENDAR
+// 8. CALENDAR VIEW
 async function openCalendarView() {
     currentCalDate = new Date();
     document.getElementById('dashSection').style.display = 'none';
@@ -405,20 +414,20 @@ function selectCalendarDate(dateKey) {
     gridContent.innerHTML = `
         <div class="time-box">
             <span style="color:#16a34a; font-weight:bold;">🟢 Punch In Time</span>
-            <b>${dayRecord.in.time}</b>
+            <b>${cleanTimeString(dayRecord.in.time)}</b>
             <small style="color:#64748b; font-size:0.68rem;">📍 ${dayRecord.in.loc}</small>
             ${dayRecord.in.photo && dayRecord.in.photo !== 'No Photo' ? `<a href="${dayRecord.in.photo}" target="_blank" class="photo-link-btn">View Drive Photo</a>` : ''}
         </div>
         <div class="time-box">
             <span style="color:#dc2626; font-weight:bold;">🔴 Punch Out Time</span>
-            <b>${dayRecord.out ? dayRecord.out.time : '--:--:--'}</b>
+            <b>${dayRecord.out ? cleanTimeString(dayRecord.out.time) : '--:--:--'}</b>
             ${dayRecord.out ? `<small style="color:#64748b; font-size:0.68rem;">📍 ${dayRecord.out.loc}</small>` : ''}
             ${dayRecord.out && dayRecord.out.photo && dayRecord.out.photo !== 'No Photo' ? `<a href="${dayRecord.out.photo}" target="_blank" class="photo-link-btn">View Drive Photo</a>` : '<div style="color:#94a3b8; font-size:0.7rem; margin-top:10px;">Pending Out</div>'}
         </div>
     `;
 }
 
-// 9. LOGOUT SESSION
+// 9. LOGOUT
 function logout() {
     localStorage.removeItem('current_sheet_user');
     currentUser = null;
@@ -436,7 +445,7 @@ function logout() {
     document.getElementById('loginSection').style.display = 'flex';
 }
 
-// 10. REFRESH RETENTION
+// 10. AUTO LOGIN ON REFRESH
 window.addEventListener('DOMContentLoaded', () => {
     const savedUser = localStorage.getItem('current_sheet_user');
     if (savedUser) {
