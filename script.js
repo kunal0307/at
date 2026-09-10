@@ -12,7 +12,7 @@ let activePunchType = null;
 let cameraStream = null;
 let employeeAttendanceHistory = {};
 
-// 1. LIVE GPS TRACKER
+// 1. GPS TRACKER
 function captureLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -31,7 +31,7 @@ function captureLocation() {
     }
 }
 
-// 2. DYNAMIC PROFILE UPDATE
+// 2. PROFILE UI POPULATE
 function updateUserProfileUI(user) {
     document.getElementById('uName').innerText = user.name || '--';
     document.getElementById('uRole').innerText = user.role || 'Field Executive';
@@ -50,7 +50,7 @@ function updateUserProfileUI(user) {
     document.getElementById('btnCallHrModal').href = hrTel;
 }
 
-// 3. GOOGLE SHEET LOGIN (REDIRECT FOLLOW ENABLED)
+// 3. LOGIN HANDLER
 async function handleLogin() {
     const idInput = document.getElementById('loginId').value.trim().toUpperCase();
     const passInput = document.getElementById('loginPass').value.trim();
@@ -86,7 +86,6 @@ async function handleLogin() {
             return;
         }
 
-        // Fresh session setup
         localStorage.removeItem('current_sheet_user');
         employeeAttendanceHistory = {};
 
@@ -102,7 +101,7 @@ async function handleLogin() {
         await syncAttendanceUI();
 
     } catch (err) {
-        console.error(err);
+        console.error("Login Error:", err);
         errorEl.innerText = "Connection Failed! Web App URL check karein.";
     } finally {
         btn.innerText = "Sign in";
@@ -146,7 +145,6 @@ function closePunchCamera() {
     }
 }
 
-
 function captureAndStampPunch() {
     const video = document.getElementById('cameraVideo');
     const canvas = document.getElementById('stampCanvas');
@@ -155,7 +153,7 @@ function captureAndStampPunch() {
     canvas.width = 400;
     canvas.height = 300;
 
-    // Camera Frame draw karein
+    // Mirror mode
     ctx.save();
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
@@ -166,7 +164,7 @@ function captureAndStampPunch() {
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    // Watermark Box
+    // Watermark Overlay
     ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
     ctx.fillRect(0, canvas.height - 85, canvas.width, 85);
 
@@ -182,14 +180,13 @@ function captureAndStampPunch() {
     ctx.font = "11px Inter, Arial";
     ctx.fillText(`📍 Loc: ${liveLocation}`, 12, canvas.height - 14);
 
-    // Standard JPEG format
-    const stampedPhotoData = canvas.toDataURL('image/jpeg', 0.6);
+    const stampedPhotoData = canvas.toDataURL('image/jpeg', 0.60);
 
     closePunchCamera();
     commitAttendancePunch(activePunchType, timeStr, stampedPhotoData);
 }
 
-// 5. COMMIT PUNCH (CORS REDIRECT SAFE)
+// 5. DATA TRANSMISSION & UI UPDATE
 async function commitAttendancePunch(type, timeStr, photoData) {
     const now = new Date();
     const dateKey = formatDateKey(now);
@@ -201,6 +198,16 @@ async function commitAttendancePunch(type, timeStr, photoData) {
     if (type === 'OUT') outBtn.innerText = "Saving to Sheet...";
     inBtn.disabled = true;
     outBtn.disabled = true;
+
+    // Local instant preview
+    if (!employeeAttendanceHistory[dateKey]) {
+        employeeAttendanceHistory[dateKey] = {};
+    }
+    if (type === 'IN') {
+        employeeAttendanceHistory[dateKey].in = { time: timeStr, loc: liveLocation, photo: "Uploading..." };
+    } else if (type === 'OUT') {
+        employeeAttendanceHistory[dateKey].out = { time: timeStr, loc: liveLocation, photo: "Uploading..." };
+    }
 
     try {
         const payload = {
@@ -224,30 +231,25 @@ async function commitAttendancePunch(type, timeStr, photoData) {
         const result = await res.json();
 
         if (result.success) {
-            if (!employeeAttendanceHistory[dateKey]) {
-                employeeAttendanceHistory[dateKey] = {};
-            }
-
             if (type === 'IN') {
-                employeeAttendanceHistory[dateKey].in = { time: timeStr, loc: liveLocation, photo: result.photoUrl };
+                employeeAttendanceHistory[dateKey].in.photo = result.photoUrl;
             } else if (type === 'OUT') {
-                employeeAttendanceHistory[dateKey].out = { time: timeStr, loc: liveLocation, photo: result.photoUrl };
+                employeeAttendanceHistory[dateKey].out.photo = result.photoUrl;
                 const inTime = employeeAttendanceHistory[dateKey].in ? employeeAttendanceHistory[dateKey].in.time : '--:--';
                 document.getElementById('modalInTime').innerText = inTime;
                 document.getElementById('modalOutTime').innerText = timeStr;
                 document.getElementById('completionModal').style.display = 'flex';
             }
 
-            await syncAttendanceUI();
             alert(`Punch ${type} successfully recorded!`);
         } else {
-            alert("Upload failed: " + result.message);
-            await syncAttendanceUI();
+            alert("Upload issue: " + result.message);
         }
 
     } catch (err) {
-        console.error("Punch error:", err);
-        alert("Network Error: Sheet tak punch record nahi hua. Console log check karein.");
+        console.error("Punch transmission error:", err);
+        alert("Server timeout! Punch local update ho chuka hai.");
+    } finally {
         await syncAttendanceUI();
     }
 }
@@ -256,7 +258,7 @@ function closeCompletionModal() {
     document.getElementById('completionModal').style.display = 'none';
 }
 
-// 6. HISTORY FETCH (CURRENT USER ONLY)
+// 6. FETCH LOGGED-IN EMPLOYEE DATA
 async function fetchUserAttendanceHistory() {
     if (!currentUser) return;
 
@@ -279,7 +281,7 @@ async function fetchUserAttendanceHistory() {
     }
 }
 
-// 7. SYNC PUNCH UI & STRICT RULES
+// 7. SYNC BUTTON CONTROLS
 async function syncAttendanceUI() {
     const inBtn = document.getElementById('punchInBtn');
     const outBtn = document.getElementById('punchOutBtn');
@@ -317,7 +319,7 @@ async function syncAttendanceUI() {
     }
 }
 
-// 8. CALENDAR VIEW
+// 8. ATTENDANCE CALENDAR
 async function openCalendarView() {
     currentCalDate = new Date();
     document.getElementById('dashSection').style.display = 'none';
@@ -416,7 +418,7 @@ function selectCalendarDate(dateKey) {
     `;
 }
 
-// 9. LOGOUT
+// 9. LOGOUT SESSION
 function logout() {
     localStorage.removeItem('current_sheet_user');
     currentUser = null;
@@ -434,7 +436,7 @@ function logout() {
     document.getElementById('loginSection').style.display = 'flex';
 }
 
-// 10. AUTO LOGIN ON REFRESH
+// 10. REFRESH RETENTION
 window.addEventListener('DOMContentLoaded', () => {
     const savedUser = localStorage.getItem('current_sheet_user');
     if (savedUser) {
