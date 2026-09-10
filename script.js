@@ -146,16 +146,16 @@ function closePunchCamera() {
     }
 }
 
+
 function captureAndStampPunch() {
     const video = document.getElementById('cameraVideo');
     const canvas = document.getElementById('stampCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Compressed canvas size to prevent network timeout
     canvas.width = 400;
     canvas.height = 300;
 
-    // Mirror Selfie
+    // Camera Frame draw karein
     ctx.save();
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
@@ -166,7 +166,7 @@ function captureAndStampPunch() {
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    // Watermark Overlay
+    // Watermark Box
     ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
     ctx.fillRect(0, canvas.height - 85, canvas.width, 85);
 
@@ -182,7 +182,8 @@ function captureAndStampPunch() {
     ctx.font = "11px Inter, Arial";
     ctx.fillText(`📍 Loc: ${liveLocation}`, 12, canvas.height - 14);
 
-    const stampedPhotoData = canvas.toDataURL('image/jpeg', 0.60);
+    // Standard JPEG format
+    const stampedPhotoData = canvas.toDataURL('image/jpeg', 0.6);
 
     closePunchCamera();
     commitAttendancePunch(activePunchType, timeStr, stampedPhotoData);
